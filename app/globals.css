@@ -1,0 +1,130 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  html {
+    @apply h-full;
+  }
+
+  body {
+    @apply min-h-full bg-canvas font-sans text-on-surface antialiased;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    @apply bg-gradient-accent bg-clip-text text-transparent;
+  }
+
+  .glass-card-main {
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-surface-container) 70%, transparent) 0%,
+      color-mix(in srgb, var(--color-surface-container-lowest) 40%, transparent) 100%
+    );
+    box-shadow:
+      0 30px 60px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 20px;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 40%, transparent) 0%,
+      color-mix(in srgb, var(--color-primary) 5%, transparent) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.8);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-secondary) 70%, transparent);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-secondary) 0%, transparent);
+    }
+    100% {
+      transform: scale(0.8);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-secondary) 0%, transparent);
+    }
+  }
+
+  .pulse-dot {
+    animation: pulse-ring 2s infinite;
+  }
+
+  @keyframes scanline {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100%);
+    }
+  }
+
+  .scanline-overlay {
+    animation: scanline 2s linear infinite;
+  }
+
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes blink-caret {
+    from,
+    to {
+      border-color: transparent;
+    }
+    50% {
+      border-color: var(--color-secondary);
+    }
+  }
+
+  .typewriter {
+    overflow: hidden;
+    border-right: 0.15em solid var(--color-secondary);
+    white-space: nowrap;
+    animation:
+      typing 3.5s steps(40, end),
+      blink-caret 0.75s step-end infinite;
+  }
+}
