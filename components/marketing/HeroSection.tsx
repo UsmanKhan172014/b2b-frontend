@@ -13,26 +13,23 @@ const SARAH_AVATAR =
 const DAVID_AVATAR =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuA1esd0zZUy_bvJdfz-A7sK5LWgWJl9EsButCc2fAHMNw0dtuYmiud8X49YWdcxw5Q6gaNvXKLl9RfR-i6M4KEPL7nLQnXqJocQuEJBOmjv5dyZbfP34LiCVGtiMSbVzoiyqTb_fzOAGovN-_wSft5TVGT_JbLuQbp-SIikTK3nEBKHbEO8CQIL9meKoUQcQNrtooyX-ruy9Vtzzy1nZwFQwHoCwtuvMgImEQ-3nKItwzhs0VshmjGNHrkUoqqY22edrse-R6qJCxE";
 
+interface HeroSectionProps {
+  isAuthenticated?: boolean;
+}
+
 /**
  * Hero section with shader background, headline, CTAs, and dashboard mockup.
  */
-export function HeroSection() {
+export function HeroSection({ isAuthenticated = false }: HeroSectionProps) {
   return (
-    <section className="relative mb-16 flex flex-col items-center gap-8 sm:mb-24 sm:gap-12 lg:mb-32 lg:flex-row lg:gap-24">
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <ShaderBackground className="opacity-40" />
-        <div className="absolute inset-0 bg-canvas/70" />
-        <div className="absolute top-[-20%] left-[-10%] size-1/2 rounded-full bg-primary-container/10 blur-[120px]" />
-        <div className="absolute right-[-10%] bottom-[-10%] size-[40%] rounded-full bg-secondary-container/10 blur-[120px]" />
-      </div>
-
+    <section className="relative mb-16 flex w-full flex-col items-stretch gap-12 sm:mb-24 sm:gap-16 lg:mb-32 lg:flex-row lg:items-center lg:gap-24">
       <motion.div
-        className="z-10 flex-1 space-y-8"
+        className="relative z-10 w-full min-w-0 flex-1 space-y-8 px-1 sm:space-y-8 sm:px-0 lg:max-w-xl lg:pr-8 xl:max-w-2xl xl:pr-12"
         initial={{ opacity: 0, y: 32 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, ease: "easeOut" }}
       >
-        <h1 className="text-balance text-display-lg-mobile leading-tight text-on-surface md:text-display-lg">
+        <h1 className="text-balance break-words text-display-lg-mobile leading-tight text-on-surface md:text-display-lg">
           The AI Agent for <br />
           <span className="gradient-text">High-Velocity</span> Sales Teams
         </h1>
@@ -41,32 +38,62 @@ export function HeroSection() {
           while you sleep. Stop searching, start closing.
         </p>
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap sm:gap-4 sm:pt-4">
-          <Link href="/signup" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              className="font-medium shadow-glow-primary hover:-translate-y-0.5 hover:shadow-glow-secondary sm:w-auto"
-            >
-              Start Free Trial
-              <MaterialIcon name="arrow_forward" className="text-lg" />
-            </Button>
-          </Link>
-          <Button variant="ghost" size="lg" className="w-full font-medium sm:w-auto">
-            Book a Demo
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="font-medium shadow-glow-primary hover:-translate-y-0.5 hover:shadow-glow-secondary sm:w-auto"
+                >
+                  Go to Dashboard
+                  <MaterialIcon name="arrow_forward" className="text-lg" />
+                </Button>
+              </Link>
+              <Link href="/research/new" className="w-full sm:w-auto">
+                <Button variant="ghost" size="lg" className="w-full font-medium sm:w-auto">
+                  New Research
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/signup" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="font-medium shadow-glow-primary hover:-translate-y-0.5 hover:shadow-glow-secondary sm:w-auto"
+                >
+                  Start Free Trial
+                  <MaterialIcon name="arrow_forward" className="text-lg" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="lg" className="w-full font-medium sm:w-auto">
+                Book a Demo
+              </Button>
+            </>
+          )}
         </div>
       </motion.div>
 
       <motion.div
-        className="relative min-w-0 w-full max-w-2xl flex-1 lg:max-w-none"
+        className="relative mt-4 w-full min-w-0 flex-1 sm:mt-6 lg:mt-0 lg:max-w-none"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.75, ease: "easeOut", delay: 0.15 }}
       >
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl">
+          <ShaderBackground className="opacity-40" />
+          <div className="absolute inset-0 bg-canvas/70" />
+          <div className="absolute top-[-20%] left-[-10%] size-1/2 rounded-full bg-primary-container/10 blur-[120px]" />
+          <div className="absolute right-[-10%] bottom-[-10%] size-[40%] rounded-full bg-secondary-container/10 blur-[120px]" />
+        </div>
+
         <GlassCard
           elevation={2}
-          className="group relative aspect-[4/3] w-full rotate-0 overflow-hidden rounded-2xl transition-transform duration-700 ease-out md:rotate-2 md:hover:rotate-0"
+          className="group relative mx-auto aspect-[4/3] w-full max-w-2xl rotate-0 overflow-hidden rounded-2xl transition-transform duration-700 ease-out md:rotate-2 md:hover:rotate-0 lg:mx-0 lg:max-w-none"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-surface-container-high/50 to-surface-container-lowest/50" />
           <div className="absolute inset-0 flex flex-col gap-3 p-4 opacity-80 transition-opacity duration-500 group-hover:opacity-100 sm:gap-4 sm:p-6">

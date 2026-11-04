@@ -46,6 +46,12 @@ export interface ScoredContactPayload {
   company_group_id?: string;
   is_primary_contact?: boolean;
   contact_rank?: number;
+  linkedin_about?: string;
+  linkedin_subtitle?: string;
+  linkedin_location?: string;
+  linkedin_experience?: unknown;
+  linkedin_education?: unknown;
+  linkedin_skills?: unknown;
 }
 
 export interface ScoredLeadPayload {
@@ -89,7 +95,6 @@ function parseSsePayload(line: string): ResearchStreamEvent | null {
   try {
     return JSON.parse(line) as ResearchStreamEvent;
   } catch {
-    console.warn("Skipping malformed SSE frame");
     return null;
   }
 }
@@ -107,6 +112,7 @@ export async function* streamResearchPipeline(
   url: string,
   brief: ResearchBriefPayload,
   signal?: AbortSignal,
+  accessToken?: string,
 ): AsyncGenerator<ResearchStreamEvent> {
   if (signal?.aborted) {
     throw new DOMException("The operation was aborted.", "AbortError");
@@ -127,6 +133,8 @@ export async function* streamResearchPipeline(
       headers: {
         "Content-Type": "application/json",
         Accept: "text/event-stream",
+        // the backend checks this when REQUIRE_AUTH is on (it stops strangers from spending the Gemini key)
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       body: JSON.stringify(brief),
       signal: connectController.signal,
@@ -146,13 +154,21 @@ export async function* streamResearchPipeline(
   }
 
   if (!response.ok) {
+    let detail = "";
     try {
-      await response.text();
+      const text = await response.text();
+      try {
+        const parsed = JSON.parse(text) as { error?: unknown; detail?: unknown };
+        const message = parsed.error ?? parsed.detail;
+        if (typeof message === "string") detail = message;
+      } catch {
+        // Not JSON: fall back to the generic message.
+      }
     } catch {
       // Ignore body read failures.
     }
     throw new ResearchStreamError(
-      `Research stream request failed (${response.status}).`,
+      detail || `Research stream request failed (${response.status}).`,
       response.status,
     );
   }
@@ -215,7 +231,7 @@ export async function* streamResearchPipeline(
 
     if (!receivedEvent) {
       throw new ResearchStreamError(
-        "Research agent connected but sent no progress events. The Gemini call may be stuck — retry in a moment.",
+        "Research agent connected but sent no progress events. Please retry in a moment.",
         504,
       );
     }

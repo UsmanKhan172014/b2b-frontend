@@ -35,43 +35,28 @@ export interface ExampleBrief {
 export const EXAMPLE_BRIEFS: ExampleBrief[] = [
 
   {
-
-    id: "bedsheets-dubai",
-
-    title: "Bedsheets in Dubai",
-
+    id: "marketmatch-banks",
+    title: "MarketMatch: Banks & Credit Unions",
     description:
-
-      "Find hotel and clinic procurement managers buying wholesale linens in Dubai.",
-
+      "CEOs, CMOs and COOs at US banks and credit unions ($100M-$12B in assets) buying marketing and growth services.",
     accent: "primary",
-
-    offer: "Wholesale bedsheets, linens, and hospitality textiles",
-
-    targetLocation: "Dubai, UAE",
-
+    offer: "Marketing, digital agency and growth services for banks and credit unions (MarketMatch)",
+    targetLocation: "United States",
     leadGoal: 15,
-
     decisionMakerRoles: [
-
-      "Owner",
-
-      "General Manager",
-
-      "Procurement Manager",
-
-      "Operations Manager",
-
+      "CEO",
+      "CMO",
+      "COO",
+      "Chief Retail Officer",
+      "Chief Experience Officer",
     ],
-
-    requiredContactFields: ["email", "phone", "whatsapp", "linkedin"],
-
+    requiredContactFields: ["email", "phone", "linkedin"],
     researchDepth: "medium",
-
     buyingSignals:
-
-      "Include newly opened businesses with public contact pages where possible.",
-
+      "Ideal prospect: a bank or credit union with $100M to $12B in assets and 3 to 200 locations, in any US state. " +
+      "Target titles: CEO, CMO, COO, Chief Retail Officer, Chief Experience Officer. " +
+      "Signals: searching for a marketing agency, digital agency, strategic planning, advertising, product development, " +
+      "increasing lending or deposit acquisition, a merger, or help growing the bank or credit union.",
   },
 
   {
@@ -176,7 +161,7 @@ export function ExampleBriefsPanel({ onSelect }: ExampleBriefsPanelProps) {
 
           <h3 className="text-body-base font-semibold text-on-surface">
 
-            Deep Research Engine
+            Lead Research Engine
 
           </h3>
 
@@ -184,9 +169,9 @@ export function ExampleBriefsPanel({ onSelect }: ExampleBriefsPanelProps) {
 
         <p className="relative text-body-sm text-on-surface-variant">
 
-          Gemini Deep Research searches the live web for named decision-makers
+          Finds named decision-makers at your target companies, with verified
 
-          with cited contact details.
+          contact details.
 
         </p>
 

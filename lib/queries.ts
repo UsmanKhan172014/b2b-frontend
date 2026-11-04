@@ -1,5 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  assertCanStartResearch,
+  getUserResearchUsage,
+  isResearchLimitError,
+  limitMessage,
+  ResearchLimitReachedError,
+} from "@/lib/research/usageLimits";
+
 export type ResearchSessionStatus = "pending" | "running" | "completed" | "failed";
 
 export interface ResearchSessionRow {
@@ -43,6 +51,12 @@ export interface LeadRow {
   is_primary_contact?: boolean | null;
   contact_rank?: number | null;
   linkedin_status?: string | null;
+  linkedin_about?: string | null;
+  linkedin_subtitle?: string | null;
+  linkedin_location?: string | null;
+  linkedin_experience?: unknown;
+  linkedin_education?: unknown;
+  linkedin_skills?: unknown;
   created_at: string;
 }
 
@@ -74,6 +88,12 @@ export interface InsertLeadInput {
   is_primary_contact?: boolean | null;
   contact_rank?: number | null;
   linkedin_status?: string | null;
+  linkedin_about?: string | null;
+  linkedin_subtitle?: string | null;
+  linkedin_location?: string | null;
+  linkedin_experience?: unknown;
+  linkedin_education?: unknown;
+  linkedin_skills?: unknown;
 }
 
 export interface CreateResearchSessionInput {
@@ -89,6 +109,8 @@ export async function createResearchSession(
   supabase: SupabaseClient,
   input: CreateResearchSessionInput,
 ): Promise<ResearchSessionRow> {
+  await assertCanStartResearch(supabase);
+
   const { data, error } = await supabase
     .from("research_sessions")
     .insert({
@@ -99,7 +121,13 @@ export async function createResearchSession(
     .select("*")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (isResearchLimitError(error)) {
+      const usage = await getUserResearchUsage(supabase);
+      throw new ResearchLimitReachedError(limitMessage(usage), usage.blockedReason);
+    }
+    throw error;
+  }
   return data as ResearchSessionRow;
 }
 
@@ -150,6 +178,30 @@ export async function getAllLeadsForUser(
 
   if (error) throw error;
   return (data ?? []) as LeadRow[];
+}
+
+/**
+ * Company names this user already received in other research sessions (RLS-scoped to the caller). A new run skips
+ * them so a subscription never delivers the same company twice.
+ */
+export async function getPreviouslyDeliveredCompanies(
+  supabase: SupabaseClient,
+  currentSessionId: string,
+  limit = 5000,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("company_name")
+    .neq("session_id", currentSessionId)
+    .limit(limit);
+
+  if (error) throw error;
+  const names = new Map<string, string>();
+  for (const row of data ?? []) {
+    const name = String(row.company_name ?? "").trim();
+    if (name && !names.has(name.toLowerCase())) names.set(name.toLowerCase(), name);
+  }
+  return [...names.values()];
 }
 
 /**

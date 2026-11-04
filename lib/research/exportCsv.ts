@@ -25,11 +25,19 @@ function contactTypeLabel(value?: string): string {
   }
 }
 
+function channelLabel(value?: string): string {
+  if (!value) return "";
+  const readable = value.replace(/^enrichment_/, "").replace(/_/g, " ");
+  return readable.charAt(0).toUpperCase() + readable.slice(1);
+}
+
 function linkedinStatusLabel(value?: string): string {
   switch (value) {
     case "verified_on_company_site":
-      return "Verified on company site";
+      return "Verified";
     case "verified_context_match":
+      return "Verified match";
+    case "provider_matched":
       return "Verified match";
     case "found_unverified":
       return "Unverified match";
@@ -82,7 +90,7 @@ function leadToExportRow(lead: ResearchLead): string[] {
     lead.companyEmail ?? "",
     lead.companyPhone ?? "",
     contactTypeLabel(lead.contactType),
-    lead.resolutionChannel ?? "",
+    channelLabel(lead.resolutionChannel),
     lead.emailSourceUrl ?? "",
     lead.phoneSourceUrl ?? "",
     lead.contactWhatsapp ?? "",

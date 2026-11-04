@@ -2,35 +2,38 @@
 
 import { MaterialIcon } from "@/components/marketing/MaterialIcon";
 import type { CampaignStepId } from "@/lib/campaigns/types";
+import type { CampaignStepMeta } from "@/lib/campaigns/campaignSteps";
 import { cn } from "@/lib/cn";
 
 interface CampaignStepperProps {
-  steps: { id: CampaignStepId; stepNumber: number; label: string }[];
-  activeStepIndex: number;
+  steps: CampaignStepMeta[];
+  activeStepId: CampaignStepId;
   onStepChange: (stepId: CampaignStepId) => void;
 }
 
 export function CampaignStepper({
   steps,
-  activeStepIndex,
+  activeStepId,
   onStepChange,
 }: CampaignStepperProps) {
+  const activeStepIndex = steps.findIndex((step) => step.id === activeStepId);
+
   return (
     <div className="relative flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
       <div className="absolute top-1/2 right-0 left-0 hidden h-0.5 -translate-y-1/2 bg-white/5 md:block" />
 
       {steps.map((step, index) => {
-        const isComplete = index < activeStepIndex;
-        const isActive = index === activeStepIndex;
-        const isPending = index > activeStepIndex;
+        const isComplete = step.isComplete && step.id !== activeStepId;
+        const isActive = step.id === activeStepId;
+        const isPending = !isComplete && !isActive;
 
         return (
           <button
             key={step.id}
             type="button"
             className={cn(
-              "relative z-10 flex w-full items-center gap-4 rounded-xl bg-surface/80 p-3 transition-colors md:w-auto md:flex-col md:gap-2 md:bg-transparent md:p-0",
-              isActive && "md:bg-transparent",
+              "relative z-10 flex w-full items-center gap-4 rounded-xl bg-surface/80 p-3 text-left transition-colors md:w-auto md:max-w-[220px] md:flex-col md:gap-2 md:bg-transparent md:p-0",
+              isActive && "ring-1 ring-primary/30 md:ring-0",
             )}
             onClick={() => onStepChange(step.id)}
           >
@@ -52,7 +55,7 @@ export function CampaignStepper({
               )}
             </div>
 
-            <div className="flex flex-col md:items-center">
+            <div className="min-w-0 flex flex-col md:items-center md:text-center">
               <span
                 className={cn(
                   "font-mono text-label-mono",
@@ -69,10 +72,17 @@ export function CampaignStepper({
               >
                 {step.label}
               </span>
+              <span className="mt-0.5 truncate text-body-sm text-on-surface-variant">
+                {step.subtitle}
+              </span>
             </div>
           </button>
         );
       })}
+
+      <span className="sr-only">
+        Step {activeStepIndex + 1} of {steps.length}
+      </span>
     </div>
   );
 }

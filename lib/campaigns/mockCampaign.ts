@@ -1,9 +1,10 @@
 import type { CampaignDraft } from "./types";
+import { createEmptyCampaignDraft } from "./types";
 
 /**
- * Mock campaign draft for the builder UI. Replace with Supabase fetch in Phase 2.
+ * Mock campaign draft retained for reference and storybook-style previews.
  */
-export const MOCK_CAMPAIGN_DRAFT: CampaignDraft = {
+export const MOCK_CAMPAIGN_DRAFT: CampaignDraft = createEmptyCampaignDraft({
   id: "campaign-draft-001",
   name: "Q3 SaaS Executive Outreach",
   audienceTags: ["SaaS Executives", "Series A+", "US & CAN"],
@@ -36,7 +37,7 @@ Are you open to a brief chat next Tuesday to see if this aligns with your curren
       isFollowUp: true,
     },
   ],
-};
+});
 
 export const CAMPAIGN_OBJECTIVES = [
   { value: "demo" as const, label: "Book a Demo" },

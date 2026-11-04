@@ -6,6 +6,7 @@ import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { SocialProofSection } from "@/components/marketing/SocialProofSection";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "LeadScope AI - The AI Agent for High-Velocity Sales Teams",
@@ -13,7 +14,13 @@ export const metadata: Metadata = {
     "LeadScope AI finds, enriches, and prioritizes your ideal prospects while you sleep. Stop searching, start closing.",
 };
 
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden font-sans text-body-base antialiased selection:bg-primary-container selection:text-on-primary-container">
       <div className="pointer-events-none fixed inset-0 -z-20 overflow-hidden">
@@ -21,10 +28,10 @@ export default function MarketingPage() {
         <div className="absolute right-[-10%] bottom-[-10%] size-[40%] rounded-full bg-secondary-container/10 blur-[120px]" />
       </div>
 
-      <MarketingNav />
+      <MarketingNav isAuthenticated={isAuthenticated} />
 
-      <main className="mx-auto w-full max-w-container-max flex-grow px-margin-mobile pt-24 pb-16 sm:pt-28 sm:pb-20 md:px-margin-desktop md:pt-32 md:pb-24">
-        <HeroSection />
+      <main className="mx-auto w-full max-w-container-max flex-grow px-6 pt-24 pb-16 sm:px-margin-mobile sm:pt-28 sm:pb-20 md:px-margin-desktop md:pt-32 md:pb-24">
+        <HeroSection isAuthenticated={isAuthenticated} />
         <SocialProofSection />
         <HowItWorksSection />
         <PricingSection />

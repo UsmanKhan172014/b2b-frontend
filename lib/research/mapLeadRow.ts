@@ -73,6 +73,16 @@ function contactTypeLabel(value?: string): string {
 }
 
 /**
+ * Deep link to LinkedIn people search for this person. Used when no profile URL could be
+ * *proven* to belong to them — a search link is always correct, a guessed profile URL may not be.
+ */
+export function linkedinSearchUrl(name?: string | null, company?: string | null): string | undefined {
+  const keywords = [name, company].map((part) => (part ?? "").trim()).filter(Boolean).join(" ");
+  if (!keywords) return undefined;
+  return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`;
+}
+
+/**
  * Human-readable label for how confidently a LinkedIn URL was matched —
  * surfaced in the UI so an unverified name-only match isn't shown with the
  * same implied confidence as one scraped directly off the company's site.
@@ -80,11 +90,17 @@ function contactTypeLabel(value?: string): string {
 export function linkedinStatusLabel(value?: string | null): string | undefined {
   switch (value) {
     case "verified_on_company_site":
-      return "Verified on company site";
+      return "Verified";
     case "verified_context_match":
+      return "Verified match";
+    case "provider_matched":
       return "Verified match";
     case "found_unverified":
       return "Unverified match";
+    case "scraped_verified":
+      return "Verified";
+    case "not_found":
+      return undefined;
     default:
       return undefined;
   }
@@ -131,18 +147,24 @@ export function mapLeadRowToResearchLead(row: LeadRow): ResearchLead {
     isPrimaryContact: row.is_primary_contact ?? true,
     contactRank: row.contact_rank ?? 1,
     linkedinStatus: row.linkedin_status?.trim() || undefined,
+    linkedinAbout: row.linkedin_about?.trim() || undefined,
+    linkedinSubtitle: row.linkedin_subtitle?.trim() || undefined,
+    linkedinLocation: row.linkedin_location?.trim() || undefined,
+    linkedinExperience: Array.isArray(row.linkedin_experience)
+      ? (row.linkedin_experience as ResearchLead["linkedinExperience"])
+      : undefined,
+    linkedinEducation: Array.isArray(row.linkedin_education)
+      ? (row.linkedin_education as ResearchLead["linkedinEducation"])
+      : undefined,
+    linkedinSkills: Array.isArray(row.linkedin_skills)
+      ? (row.linkedin_skills as ResearchLead["linkedinSkills"])
+      : undefined,
     signals: signalText
       ? [
           {
             id: `${row.id}-signal`,
             title: signalText,
             source: [
-              row.resolution_channel
-                ? `Channel: ${contactTypeLabel(row.resolution_channel ?? undefined)}`
-                : null,
-              row.contact_type
-                ? `Contact type: ${contactTypeLabel(row.contact_type ?? undefined)}`
-                : null,
               locationLabel ? `Location: ${locationLabel}` : null,
             ]
               .filter(Boolean)

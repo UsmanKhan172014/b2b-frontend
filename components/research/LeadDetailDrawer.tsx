@@ -6,12 +6,14 @@ import Link from "next/link";
 import { MaterialIcon } from "@/components/marketing/MaterialIcon";
 import { Button } from "@/components/ui";
 import type { ConfidenceLevel, ResearchLead } from "@/lib/research/types";
-import { linkedinStatusLabel } from "@/lib/research/mapLeadRow";
+import { linkedinSearchUrl, linkedinStatusLabel } from "@/lib/research/mapLeadRow";
 import { normalizeWebsiteUrl } from "@/lib/research/urls";
 import { cn } from "@/lib/cn";
+import { CAMPAIGNS_ENABLED, CAMPAIGNS_SOON_MESSAGE } from "@/lib/config/features";
 
 interface LeadDetailDrawerProps {
   lead: ResearchLead | null;
+  sessionId?: string;
   additionalContacts?: ResearchLead[];
   onClose: () => void;
 }
@@ -79,6 +81,7 @@ function FitScoreGauge({ score }: { score: number }) {
 
 export function LeadDetailDrawer({
   lead,
+  sessionId = "",
   additionalContacts = [],
   onClose,
 }: LeadDetailDrawerProps) {
@@ -181,7 +184,7 @@ export function LeadDetailDrawer({
                     <MaterialIcon name="person" className="text-lg text-secondary" />
                     Contact Details
                   </h4>
-                  {lead.contactType ? (
+                  {lead.contactType && !(lead.contactEmail || lead.contactPhone || lead.contactLinkedin) ? (
                     <span className="mb-3 inline-flex rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-label-sm text-primary">
                       {contactTypeLabel(lead.contactType)}
                     </span>
@@ -218,7 +221,7 @@ export function LeadDetailDrawer({
                       </div>
                     ) : (
                       <p className="text-body-sm text-on-surface-variant/60">
-                        Person email not found in public sources
+                        Direct email not available
                       </p>
                     )}
                     {lead.contactPhone ? (
@@ -243,7 +246,7 @@ export function LeadDetailDrawer({
                       </div>
                     ) : (
                       <p className="text-body-sm text-on-surface-variant/60">
-                        Person phone not found in public sources
+                        Direct phone not available
                       </p>
                     )}
                     {lead.companyEmail || lead.companyPhone ? (
@@ -294,8 +297,85 @@ export function LeadDetailDrawer({
                           </span>
                         ) : null}
                       </div>
+                    ) : linkedinSearchUrl(lead.contactName, lead.size) ? (
+                      <div>
+                        <a
+                          href={linkedinSearchUrl(lead.contactName, lead.size)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-surface-container px-3 py-1.5 text-[13px] text-on-surface-variant transition-colors hover:bg-white/10"
+                        >
+                          <MaterialIcon name="search" className="text-base" />
+                          Find on LinkedIn
+                        </a>
+                        <span className="mt-1 block text-xs text-on-surface-variant/70">
+                          Search link — no profile could be verified as theirs
+                        </span>
+                      </div>
                     ) : null}
                   </div>
+                </div>
+              ) : null}
+
+              {lead.linkedinAbout ||
+              lead.linkedinSubtitle ||
+              (lead.linkedinExperience && lead.linkedinExperience.length > 0) ||
+              (lead.linkedinSkills && lead.linkedinSkills.length > 0) ? (
+                <div className="border-b border-white/10 p-6">
+                  <h4 className="mb-3 flex items-center gap-2 text-body-sm font-semibold text-on-surface">
+                    <MaterialIcon name="badge" className="text-lg text-primary" />
+                    LinkedIn enrichment
+                  </h4>
+                  {lead.linkedinSubtitle ? (
+                    <p className="mb-2 text-body-sm text-on-surface-variant">
+                      {lead.linkedinSubtitle}
+                    </p>
+                  ) : null}
+                  {lead.linkedinLocation ? (
+                    <p className="mb-2 text-xs text-on-surface-variant/80">
+                      {lead.linkedinLocation}
+                    </p>
+                  ) : null}
+                  {lead.linkedinAbout ? (
+                    <p className="mb-3 text-body-sm leading-relaxed text-on-surface-variant">
+                      {lead.linkedinAbout}
+                    </p>
+                  ) : null}
+                  {lead.linkedinExperience && lead.linkedinExperience.length > 0 ? (
+                    <div className="mb-3">
+                      <p className="mb-1 font-mono text-label-mono text-on-surface-variant uppercase">
+                        Experience
+                      </p>
+                      <ul className="space-y-1.5">
+                        {lead.linkedinExperience.slice(0, 5).map((item, index) => (
+                          <li
+                            key={`${item.role}-${index}`}
+                            className="text-body-sm text-on-surface-variant"
+                          >
+                            {[item.role, item.company].filter(Boolean).join(" · ")}
+                            {item.duration ? (
+                              <span className="text-on-surface-variant/60">
+                                {" "}
+                                ({item.duration})
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {lead.linkedinSkills && lead.linkedinSkills.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.linkedinSkills.slice(0, 12).map((skill, index) => (
+                        <span
+                          key={`${skill.name || skill.skillName}-${index}`}
+                          className="rounded-full border border-white/10 bg-surface-container px-2.5 py-1 text-xs text-on-surface-variant"
+                        >
+                          {skill.name || skill.skillName}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -347,6 +427,16 @@ export function LeadDetailDrawer({
                             >
                               <MaterialIcon name="work" className="text-sm" />
                               LinkedIn
+                            </a>
+                          ) : linkedinSearchUrl(contact.contactName, contact.size) ? (
+                            <a
+                              href={linkedinSearchUrl(contact.contactName, contact.size)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-surface-container px-2 py-1 text-xs text-on-surface-variant transition-colors hover:bg-white/10"
+                            >
+                              <MaterialIcon name="search" className="text-sm" />
+                              Find on LinkedIn
                             </a>
                           ) : null}
                           {!contact.contactEmail && !contact.contactPhone ? (
@@ -422,12 +512,27 @@ export function LeadDetailDrawer({
             </div>
 
             <div className="border-t border-white/10 bg-surface/50 p-4 backdrop-blur-md">
-              <Link href="/campaigns/new" className="block">
-                <Button fullWidth className="shadow-glow-primary-sm">
-                  <MaterialIcon name="add_circle" className="text-lg" />
-                  Add to Campaign
-                </Button>
-              </Link>
+              {CAMPAIGNS_ENABLED ? (
+                <Link
+                  href={`/campaigns/new?${new URLSearchParams({
+                    ...(sessionId ? { sessionId } : {}),
+                    leadIds: lead.id,
+                  }).toString()}`}
+                  className="block"
+                >
+                  <Button fullWidth className="shadow-glow-primary-sm">
+                    <MaterialIcon name="add_circle" className="text-lg" />
+                    Add to Campaign
+                  </Button>
+                </Link>
+              ) : (
+                <span title={CAMPAIGNS_SOON_MESSAGE} className="block cursor-not-allowed">
+                  <Button fullWidth disabled aria-label={CAMPAIGNS_SOON_MESSAGE}>
+                    <MaterialIcon name="campaign" className="text-lg" />
+                    Campaigns coming soon
+                  </Button>
+                </span>
+              )}
             </div>
           </motion.aside>
         </>

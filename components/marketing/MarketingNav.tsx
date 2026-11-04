@@ -12,16 +12,20 @@ const navLinks = [
   { href: "#pricing", label: "Pricing" },
 ];
 
+interface MarketingNavProps {
+  isAuthenticated?: boolean;
+}
+
 /**
  * Responsive marketing navigation with mobile drawer.
  */
-export function MarketingNav() {
+export function MarketingNav({ isAuthenticated = false }: MarketingNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between border-b border-white/5 bg-surface/40 px-margin-mobile backdrop-blur-md md:px-margin-desktop">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2">
           <MaterialIcon name="psychology" className="text-primary" filled />
           <span className="gradient-text text-base font-semibold sm:text-headline-md">
             LeadScope AI
@@ -29,26 +33,45 @@ export function MarketingNav() {
         </Link>
 
         <div className="hidden items-center gap-6 lg:gap-8 md:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-body-sm text-on-surface-variant transition-colors hover:text-primary"
-            >
-              {link.label}
-            </a>
-          ))}
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-transparent px-4 py-2 text-body-sm font-bold text-on-surface transition-all duration-200 hover:border-primary/50 hover:bg-white/5 hover:shadow-glow-primary-sm lg:px-5"
-          >
-            Sign In
-          </Link>
-          <Link href="/signup">
-            <Button variant="primary" size="sm" className="shadow-glow-primary">
-              Start Free Trial
-            </Button>
-          </Link>
+          {!isAuthenticated &&
+            navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-body-sm text-on-surface-variant transition-colors hover:text-primary"
+              >
+                {link.label}
+              </a>
+            ))}
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/research/new"
+                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-transparent px-4 py-2 text-body-sm font-bold text-on-surface transition-all duration-200 hover:border-primary/50 hover:bg-white/5 hover:shadow-glow-primary-sm lg:px-5"
+              >
+                New Research
+              </Link>
+              <Link href="/dashboard">
+                <Button variant="primary" size="sm" className="shadow-glow-primary">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-transparent px-4 py-2 text-body-sm font-bold text-on-surface transition-all duration-200 hover:border-primary/50 hover:bg-white/5 hover:shadow-glow-primary-sm lg:px-5"
+              >
+                Sign In
+              </Link>
+              <Link href="/signup">
+                <Button variant="primary" size="sm" className="shadow-glow-primary">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -73,28 +96,48 @@ export function MarketingNav() {
         )}
       >
         <div className="flex flex-col gap-3">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="rounded-lg px-3 py-2 text-body-sm text-on-surface-variant transition-colors hover:bg-white/5 hover:text-on-surface"
-              onClick={() => setOpen(false)}
-            >
-              {link.label}
-            </a>
-          ))}
-          <Link
-            href="/login"
-            className="rounded-lg border border-white/10 px-3 py-2.5 text-center text-body-sm font-semibold text-on-surface"
-            onClick={() => setOpen(false)}
-          >
-            Sign In
-          </Link>
-          <Link href="/signup" onClick={() => setOpen(false)}>
-            <Button variant="primary" fullWidth className="shadow-glow-primary">
-              Start Free Trial
-            </Button>
-          </Link>
+          {!isAuthenticated &&
+            navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="rounded-lg px-3 py-2 text-body-sm text-on-surface-variant transition-colors hover:bg-white/5 hover:text-on-surface"
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </a>
+            ))}
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/research/new"
+                className="rounded-lg border border-white/10 px-3 py-2.5 text-center text-body-sm font-semibold text-on-surface"
+                onClick={() => setOpen(false)}
+              >
+                New Research
+              </Link>
+              <Link href="/dashboard" onClick={() => setOpen(false)}>
+                <Button variant="primary" fullWidth className="shadow-glow-primary">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-lg border border-white/10 px-3 py-2.5 text-center text-body-sm font-semibold text-on-surface"
+                onClick={() => setOpen(false)}
+              >
+                Sign In
+              </Link>
+              <Link href="/signup" onClick={() => setOpen(false)}>
+                <Button variant="primary" fullWidth className="shadow-glow-primary">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </>

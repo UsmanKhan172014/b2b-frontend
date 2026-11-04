@@ -206,10 +206,11 @@ export function DashboardRecentSessions({
                     {briefSummary(session.brief)}
                   </p>
                   <p className="mt-1 font-mono text-label-mono text-on-surface-variant">
-                    {new Date(session.created_at).toLocaleDateString(undefined, {
+                    {new Date(session.created_at).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
+                      timeZone: "UTC",
                     })}
                     {leadCount > 0 ? ` · ${leadCount} leads` : ""}
                   </p>

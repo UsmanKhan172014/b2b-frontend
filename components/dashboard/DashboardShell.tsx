@@ -7,6 +7,7 @@ import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 
 interface DashboardShellProps {
   children: ReactNode;
+  isAdmin?: boolean;
   userEmail?: string | null;
   userName?: string | null;
   avatarUrl?: string;
@@ -17,6 +18,7 @@ interface DashboardShellProps {
  */
 export function DashboardShell({
   children,
+  isAdmin,
   userEmail,
   userName,
   avatarUrl,
@@ -31,6 +33,7 @@ export function DashboardShell({
       </div>
 
       <DashboardSidebar
+        isAdmin={isAdmin}
         userEmail={userEmail}
         userName={userName}
         avatarUrl={avatarUrl}

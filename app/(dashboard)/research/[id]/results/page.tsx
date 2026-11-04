@@ -36,25 +36,5 @@ export default async function ResearchResultsPage({
   const leadRows = await getLeadsForSession(supabase, id);
   const initialLeads = leadRows.map(mapLeadRowToResearchLead);
 
-  const pipelineMetadata = session.pipeline_metadata ?? {};
-  const costEstimate =
-    pipelineMetadata.cost_estimate &&
-    typeof pipelineMetadata.cost_estimate === "object"
-      ? (pipelineMetadata.cost_estimate as Record<string, unknown>)
-      : null;
-  const estimatedCostUsd =
-    typeof costEstimate?.estimated_cost_usd === "number"
-      ? costEstimate.estimated_cost_usd
-      : null;
-  const costNote =
-    typeof costEstimate?.cost_note === "string" ? costEstimate.cost_note : null;
-
-  return (
-    <ResearchResultsView
-      sessionId={id}
-      initialLeads={initialLeads}
-      estimatedCostUsd={estimatedCostUsd}
-      costNote={costNote}
-    />
-  );
+  return <ResearchResultsView sessionId={id} initialLeads={initialLeads} />;
 }

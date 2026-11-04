@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import { MaterialIcon } from "@/components/marketing/MaterialIcon";
 import { Button, GlassCard } from "@/components/ui";
 import { LeadDetailDrawer } from "@/components/research/LeadDetailDrawer";
 import { ResearchResultsTable } from "@/components/research/ResearchResultsTable";
 import { useResearchResults } from "@/hooks/useResearchResults";
+import { leadHasEmail } from "@/lib/campaigns/mapLeadToEmailVariables";
+import { CAMPAIGNS_ENABLED, CAMPAIGNS_SOON_MESSAGE } from "@/lib/config/features";
 import type { ResearchLead, SortField } from "@/lib/research/types";
 import { cn } from "@/lib/cn";
+import { getUserResearchUsage } from "@/lib/research/usageLimits";
+import { createClient } from "@/lib/supabase/client";
 
 interface ResearchResultsViewProps {
   sessionId?: string;
   initialLeads: ResearchLead[];
   title?: string;
   subtitle?: string;
-  estimatedCostUsd?: number | null;
-  costNote?: string | null;
 }
 
 const SORT_OPTIONS: { field: SortField; label: string }[] = [
@@ -31,8 +34,6 @@ export function ResearchResultsView({
   initialLeads,
   title = "Lead Finder Results",
   subtitle,
-  estimatedCostUsd = null,
-  costNote = null,
 }: ResearchResultsViewProps) {
   const {
     leads,
@@ -56,8 +57,38 @@ export function ResearchResultsView({
     exportXlsx,
   } = useResearchResults(sessionId, initialLeads);
 
+  // Demo accounts cannot export (and their runs carry no phone numbers). Until the plan is known, exports stay off.
+  const [exportAllowed, setExportAllowed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getUserResearchUsage(createClient())
+      .then((usage) => {
+        if (!cancelled) setExportAllowed(usage.planType !== "demo");
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [selectedForCampaignIds, setSelectedForCampaignIds] = useState<string[]>([]);
+
+  const campaignLeadIds = useMemo(() => {
+    const sourceIds =
+      selectedForCampaignIds.length > 0
+        ? selectedForCampaignIds
+        : leads.filter(leadHasEmail).map((lead) => lead.id);
+    return sourceIds;
+  }, [selectedForCampaignIds, leads]);
+
+  const campaignHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (sessionId) params.set("sessionId", sessionId);
+    if (campaignLeadIds.length > 0) params.set("leadIds", campaignLeadIds.join(","));
+    return `/campaigns/new?${params.toString()}`;
+  }, [sessionId, campaignLeadIds]);
 
   const activeSortLabel =
     SORT_OPTIONS.find((option) => option.field === sort.field)?.label ?? "Fit Score";
@@ -75,19 +106,6 @@ export function ResearchResultsView({
               {subtitle ??
                 `Showing ${filteredCount} of ${totalCount} ranked prospects based on ICP criteria`}
             </p>
-            {typeof estimatedCostUsd === "number" ? (
-              <p className="mt-1 text-body-sm text-on-surface-variant">
-                Estimated AI cost this run:{" "}
-                <span className="font-medium text-on-surface">
-                  ${estimatedCostUsd.toFixed(2)} USD
-                </span>
-                {costNote ? (
-                  <span className="ml-1 text-label-sm text-on-surface-variant/80">
-                    ({costNote})
-                  </span>
-                ) : null}
-              </p>
-            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -209,16 +227,48 @@ export function ResearchResultsView({
               ) : null}
             </div>
 
-            <Button variant="ghost" size="sm" onClick={exportCsv}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportCsv}
+              disabled={!exportAllowed}
+              title={exportAllowed ? undefined : "Exporting is available on the Standard plan"}
+            >
               <MaterialIcon name="download" className="text-lg" />
               <span className="hidden sm:inline">Export CSV</span>
               <span className="sm:hidden">CSV</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={exportXlsx}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportXlsx}
+              disabled={!exportAllowed}
+              title={exportAllowed ? undefined : "Exporting is available on the Standard plan"}
+            >
               <MaterialIcon name="table" className="text-lg" />
               <span className="hidden sm:inline">Export Excel</span>
               <span className="sm:hidden">XLS</span>
             </Button>
+
+            {CAMPAIGNS_ENABLED ? (
+              <Link href={campaignHref}>
+                <Button size="sm" disabled={campaignLeadIds.length === 0}>
+                  <MaterialIcon name="campaign" className="text-lg" />
+                  <span className="hidden sm:inline">
+                    Add {campaignLeadIds.length} to Campaign
+                  </span>
+                  <span className="sm:hidden">Campaign</span>
+                </Button>
+              </Link>
+            ) : (
+              <span title={CAMPAIGNS_SOON_MESSAGE} className="inline-flex cursor-not-allowed">
+                <Button size="sm" disabled aria-label={CAMPAIGNS_SOON_MESSAGE}>
+                  <MaterialIcon name="campaign" className="text-lg" />
+                  <span className="hidden sm:inline">Campaigns coming soon</span>
+                  <span className="sm:hidden">Soon</span>
+                </Button>
+              </span>
+            )}
           </div>
         </div>
 
@@ -233,6 +283,18 @@ export function ResearchResultsView({
             totalCount={totalCount}
             isLoading={isLoading}
             selectedLeadId={selectedLeadId}
+            selectedCampaignLeadIds={selectedForCampaignIds}
+            onToggleCampaignLead={
+              CAMPAIGNS_ENABLED
+                ? (leadId) => {
+                    setSelectedForCampaignIds((current) =>
+                      current.includes(leadId)
+                        ? current.filter((id) => id !== leadId)
+                        : [...current, leadId],
+                    );
+                  }
+                : undefined
+            }
             onViewLead={selectLead}
           />
         </GlassCard>
@@ -240,6 +302,7 @@ export function ResearchResultsView({
 
       <LeadDetailDrawer
         lead={selectedLead}
+        sessionId={sessionId}
         additionalContacts={selectedLeadAdditionalContacts}
         onClose={clearSelection}
       />

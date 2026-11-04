@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { ApiUsageTab } from "@/components/settings/ApiUsageTab";
-import { BillingTab } from "@/components/settings/BillingTab";
+import { LinkedInTab } from "@/components/settings/LinkedInTab";
+import { PlanUsageTab } from "@/components/settings/PlanUsageTab";
 import { ProfileTab } from "@/components/settings/ProfileTab";
+import { SecurityTab } from "@/components/settings/SecurityTab";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import type { SettingsTabId, SettingsUserProfile } from "@/lib/settings/types";
 
@@ -23,7 +24,7 @@ export function SettingsView({ profile }: SettingsViewProps) {
           Settings
         </h1>
         <p className="mt-2 text-body-base text-on-surface-variant">
-          Manage your account, API access, and billing preferences.
+          Manage your profile, plan and security.
         </p>
       </div>
 
@@ -38,8 +39,9 @@ export function SettingsView({ profile }: SettingsViewProps) {
           transition={{ duration: 0.2 }}
         >
           {activeTab === "profile" ? <ProfileTab profile={profile} /> : null}
-          {activeTab === "api" ? <ApiUsageTab /> : null}
-          {activeTab === "billing" ? <BillingTab /> : null}
+          {activeTab === "linkedin" ? <LinkedInTab /> : null}
+          {activeTab === "plan" ? <PlanUsageTab /> : null}
+          {activeTab === "security" ? <SecurityTab email={profile.email} /> : null}
         </motion.div>
       </AnimatePresence>
     </div>

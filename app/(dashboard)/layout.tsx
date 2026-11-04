@@ -1,15 +1,12 @@
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import { createClient } from "@/lib/supabase/server";
+import { getCaller } from "@/lib/auth/requireAdmin";
 
 export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, isAdmin } = await getCaller();
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -18,6 +15,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
+      isAdmin={isAdmin}
       userEmail={user?.email}
       userName={userName}
       avatarUrl={user?.user_metadata?.avatar_url as string | undefined}

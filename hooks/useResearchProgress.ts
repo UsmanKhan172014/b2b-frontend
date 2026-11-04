@@ -7,6 +7,7 @@ import type { ResearchBriefPayload } from "@/components/research/ResearchBriefFo
 import { getAgentStreamUrl } from "@/lib/env";
 import {
   getLeadsForSession,
+  getPreviouslyDeliveredCompanies,
   replaceLeadsForSession,
   updateResearchSessionStatus,
 } from "@/lib/queries";
@@ -16,6 +17,7 @@ import {
   streamResearchPipeline,
 } from "@/lib/research/streamClient";
 import { sanitizeSourceUrls } from "@/lib/research/urls";
+import { logClientError } from "@/lib/logging";
 import { createClient } from "@/lib/supabase/client";
 
 export type StageStatus = "pending" | "active" | "done";
@@ -34,7 +36,8 @@ export type ProgressErrorReason =
   | "pipeline"
   | "no_contacts"
   | "persist"
-  | "session";
+  | "session"
+  | "limit";
 
 export interface ResearchStage {
   id: string;
@@ -51,6 +54,8 @@ export interface ResearchProgressState {
   activeLogs: string[];
   connectionState: ProgressConnectionState;
   errorReason: ProgressErrorReason | null;
+  /** Plain-language reason from the server when the run was refused (plan limit, too many runs). */
+  errorMessage: string | null;
   retry: () => void;
   cancel: () => void;
 }
@@ -240,6 +245,12 @@ function mapContactsForInsert(
             is_primary_contact: contact.is_primary_contact ?? true,
             contact_rank: contact.contact_rank ?? 1,
             linkedin_status: contact.linkedin_status ?? null,
+            linkedin_about: contact.linkedin_about ?? null,
+            linkedin_subtitle: contact.linkedin_subtitle ?? null,
+            linkedin_location: contact.linkedin_location ?? null,
+            linkedin_experience: contact.linkedin_experience ?? null,
+            linkedin_education: contact.linkedin_education ?? null,
+            linkedin_skills: contact.linkedin_skills ?? null,
           };
         })
       : (result.leads ?? []).map((lead) => {
@@ -284,7 +295,6 @@ async function persistSessionMetadata(
   result: ResearchFinalResultPayload,
 ): Promise<void> {
   const metadata = result.metadata ?? {};
-  const costEstimate = metadata.cost_estimate;
   const pipelineMetadata: Record<string, unknown> = {
     research_depth: metadata.research_depth,
     scored_contact_count: metadata.scored_contact_count,
@@ -292,9 +302,6 @@ async function persistSessionMetadata(
     minimum_contacts: metadata.minimum_contacts,
     minimum_met: metadata.minimum_met,
   };
-  if (costEstimate && typeof costEstimate === "object") {
-    pipelineMetadata.cost_estimate = costEstimate;
-  }
 
   const { error } = await supabase
     .from("research_sessions")
@@ -334,6 +341,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
   const [progressPercent, setProgressPercent] = useState(0);
   const [connectionState, setConnectionState] =
     useState<ProgressConnectionState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorReason, setErrorReason] = useState<ProgressErrorReason | null>(
     null,
   );
@@ -353,6 +361,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
 
     setConnectionState("persisting");
     setErrorReason(null);
+    setErrorMessage(null);
 
     try {
       const supabase = createClient();
@@ -371,12 +380,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
       router.push(`/research/${sessionId}/results`);
       return true;
     } catch (persistError) {
-      console.error(
-        "Failed to persist research leads:",
-        persistError instanceof Error
-          ? persistError.message
-          : JSON.stringify(persistError, null, 2),
-      );
+      logClientError("research-persist", persistError);
       setErrorReason("persist");
       setConnectionState("error");
       return false;
@@ -386,6 +390,10 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
   const retry = useCallback(() => {
     if (hasFinishedRef.current) return;
 
+    if (errorReason === "limit") {
+      router.push("/dashboard");
+      return;
+    }
     if (errorReason === "session") {
       router.push("/dashboard");
       return;
@@ -403,6 +411,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
     setProgressPercent(0);
     setConnectionState("idle");
     setErrorReason(null);
+    setErrorMessage(null);
     setRetryNonce((value) => value + 1);
   }, [errorReason, persistPendingLeads, router]);
 
@@ -439,6 +448,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
       setActiveLogs([]);
       setProgressPercent(0);
       setErrorReason(null);
+    setErrorMessage(null);
 
       try {
         const supabase = createClient();
@@ -479,13 +489,31 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
           await updateResearchSessionStatus(supabase, sessionId, "running");
         }
 
-        const brief = sessionRow.brief;
+        // never deliver a company this user already received; a failed lookup must not block the run
+        let excludeCompanies: string[] = [];
+        try {
+          excludeCompanies = await getPreviouslyDeliveredCompanies(supabase, sessionId);
+        } catch {
+          excludeCompanies = [];
+        }
+
+        const brief = {
+          ...(sessionRow.brief as ResearchBriefPayload),
+          excludeCompanies,
+          userId:
+            (sessionRow.brief as ResearchBriefPayload).userId ||
+            (
+              await supabase.auth.getUser()
+            ).data.user?.id,
+        };
         setConnectionState("streaming");
 
+        const { data: authData } = await createClient().auth.getSession();
         for await (const event of streamResearchPipeline(
           getAgentStreamUrl(),
           brief,
           controller.signal,
+          authData.session?.access_token,
         )) {
           if (cancelled || generation !== streamGenerationRef.current) return;
 
@@ -560,12 +588,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
                 );
                 pendingLeadsRef.current = null;
               } catch (persistError) {
-                console.error(
-                  "Failed to persist research leads:",
-                  persistError instanceof Error
-                    ? persistError.message
-                    : JSON.stringify(persistError, null, 2),
-                );
+                logClientError("research-persist", persistError);
                 setErrorReason("persist");
                 setConnectionState("error");
                 return;
@@ -577,11 +600,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
             }
 
             case "error":
-              console.error("Research pipeline error:", {
-                stageId: event.stageId,
-                errorType: event.data?.errorType,
-                errorCategory: event.data?.errorCategory,
-              });
+              logClientError("research-pipeline");
               setErrorReason(isQuotaError(event) ? "quota" : "pipeline");
               setConnectionState("error");
               await updateResearchSessionStatus(supabase, sessionId, "failed");
@@ -603,10 +622,16 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
         if (controller.signal.aborted || cancelled) return;
         if (generation !== streamGenerationRef.current) return;
 
-        console.error("Research progress stream failed:", error);
+        logClientError("research-stream", error);
         hasFinishedRef.current = false;
 
-        if (error instanceof ResearchStreamError && error.status === 503) {
+        if (
+          error instanceof ResearchStreamError &&
+          (error.status === 403 || error.status === 429)
+        ) {
+          setErrorMessage(error.message);
+          setErrorReason("limit");
+        } else if (error instanceof ResearchStreamError && error.status === 503) {
           setErrorReason("pipeline");
         } else if (error instanceof ResearchStreamError && error.status === 422) {
           setErrorReason("session");
@@ -641,6 +666,7 @@ export function useResearchProgress(sessionId: string): ResearchProgressState {
     activeLogs,
     connectionState,
     errorReason,
+    errorMessage,
     retry,
     cancel,
   };

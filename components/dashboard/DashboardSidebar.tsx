@@ -10,14 +10,29 @@ import { Avatar } from "@/components/ui";
 import { SidebarNavItem } from "@/components/ui/SidebarNavItem";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
+import { CAMPAIGNS_ENABLED, CAMPAIGNS_SOON_MESSAGE } from "@/lib/config/features";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  disabledReason?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/research/new", label: "New Research", icon: "science" },
   { href: "/leads", label: "Leads", icon: "groups" },
-  { href: "/campaigns", label: "Campaigns", icon: "send" },
+  {
+    href: "/campaigns",
+    label: "Campaigns",
+    icon: "send",
+    disabledReason: CAMPAIGNS_ENABLED ? undefined : CAMPAIGNS_SOON_MESSAGE,
+  },
   { href: "/settings", label: "Settings", icon: "settings" },
-] as const;
+];
+
+const ADMIN_ITEM: NavItem = { href: "/admin", label: "Admin", icon: "admin_panel_settings" };
 
 const sidebarContainer = {
   hidden: {},
@@ -30,6 +45,7 @@ const sidebarItem = {
 };
 
 interface DashboardSidebarProps {
+  isAdmin?: boolean;
   userEmail?: string | null;
   userName?: string | null;
   avatarUrl?: string;
@@ -38,11 +54,13 @@ interface DashboardSidebarProps {
 }
 
 function SidebarPanel({
+  isAdmin,
   userEmail,
   userName,
   avatarUrl,
   onNavigate,
 }: {
+  isAdmin?: boolean;
   userEmail?: string | null;
   userName?: string | null;
   avatarUrl?: string;
@@ -76,8 +94,8 @@ function SidebarPanel({
         initial="hidden"
         animate="show"
       >
-        {NAV_ITEMS.map((item) => {
-          const active =
+        {(isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS).map((item) => {
+          const active = !item.disabledReason &&
             item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
@@ -88,6 +106,9 @@ function SidebarPanel({
                 href={item.href}
                 label={item.label}
                 active={active}
+                disabled={Boolean(item.disabledReason)}
+                tooltip={item.disabledReason}
+                badge={item.disabledReason ? "Soon" : undefined}
                 onClick={onNavigate}
                 icon={
                   <MaterialIcon
@@ -136,6 +157,7 @@ function SidebarPanel({
  * Fixed glass sidebar with staggered nav entrance and user profile footer.
  */
 export function DashboardSidebar({
+  isAdmin,
   userEmail,
   userName,
   avatarUrl,
@@ -146,6 +168,7 @@ export function DashboardSidebar({
     <>
       <aside className="fixed top-gutter bottom-gutter left-gutter z-50 hidden w-64 flex-col gap-panel-gap rounded-xl border border-white/10 bg-surface-container/60 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl md:flex">
         <SidebarPanel
+          isAdmin={isAdmin}
           userEmail={userEmail}
           userName={userName}
           avatarUrl={avatarUrl}
@@ -168,6 +191,7 @@ export function DashboardSidebar({
         )}
       >
         <SidebarPanel
+          isAdmin={isAdmin}
           userEmail={userEmail}
           userName={userName}
           avatarUrl={avatarUrl}

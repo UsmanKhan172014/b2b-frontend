@@ -5,15 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthCard } from "@/components/auth/AuthCard";
-import {
-  AuthDivider,
-  AuthErrorMessage,
-  AuthHeader,
-  GoogleAuthButton,
-} from "@/components/auth/AuthShared";
+import { AuthErrorMessage, AuthHeader } from "@/components/auth/AuthShared";
 import { MaterialIcon } from "@/components/marketing/MaterialIcon";
 import { Button, Input } from "@/components/ui";
+import { safeRedirectPath } from "@/lib/security/safeRedirect";
 import { createClient } from "@/lib/supabase/client";
+
+const URL_NOTICES: Record<string, string> = {
+  link_invalid: "That link is invalid or has expired. Request a new one and try again.",
+  too_many: "Too many attempts. Please wait a few minutes and try again.",
+};
 
 /**
  * Login form wired to Supabase email/password authentication.
@@ -26,6 +27,8 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const urlNotice = URL_NOTICES[searchParams.get("error") ?? ""] ?? null;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -33,18 +36,22 @@ export function LoginForm() {
 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 
     if (authError) {
-      setError(authError.message);
+      // One neutral message for every failure: it must not reveal whether the address has an account.
+      setError(
+        authError.status === 429
+          ? "Too many attempts. Please wait a few minutes and try again."
+          : "Incorrect email or password.",
+      );
       setLoading(false);
       return;
     }
 
-    const redirectTo = searchParams.get("redirect") || "/dashboard";
-    router.push(redirectTo);
+    router.push(safeRedirectPath(searchParams.get("redirect")));
     router.refresh();
   }
 
@@ -53,7 +60,7 @@ export function LoginForm() {
       <AuthHeader title="Welcome back" subtitle="" variant="login" />
 
       <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
-        {error && <AuthErrorMessage>{error}</AuthErrorMessage>}
+        {error || urlNotice ? <AuthErrorMessage>{error ?? urlNotice}</AuthErrorMessage> : null}
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -85,7 +92,7 @@ export function LoginForm() {
                 Password
               </label>
               <Link
-                href="#"
+                href="/forgot-password"
                 className="text-body-sm text-primary transition-colors hover:text-secondary"
               >
                 Forgot?
@@ -124,9 +131,6 @@ export function LoginForm() {
             </>
           )}
         </Button>
-
-        <AuthDivider />
-        <GoogleAuthButton label="Continue with Google" />
       </form>
 
       <footer className="text-center">

@@ -130,7 +130,7 @@ export function ProfileTab({ profile }: ProfileTabProps) {
             </div>
 
             <div className="space-y-2">
-              <SettingsFieldLabel htmlFor="role">Role</SettingsFieldLabel>
+              <SettingsFieldLabel htmlFor="role">Job title</SettingsFieldLabel>
               <Input
                 id="role"
                 value={role}

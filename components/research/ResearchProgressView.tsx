@@ -46,7 +46,8 @@ function statusBadgeLabel(
     case "complete":
       return "Analysis Complete";
     case "error":
-      if (errorReason === "quota") return "API Limit Reached";
+      if (errorReason === "quota") return "Service Busy";
+      if (errorReason === "limit") return "Limit Reached";
       if (errorReason === "persist") return "Save Failed";
       if (errorReason === "session") return "Session Error";
       if (errorReason === "pipeline") return "Analysis Paused";
@@ -182,9 +183,11 @@ function TimelineStage({
 
 function ProgressErrorPanel({
   errorReason,
+  errorMessage,
   onRetry,
 }: {
   errorReason: ProgressErrorReason;
+  errorMessage: string | null;
   onRetry: () => void;
 }) {
   const copy: Record<
@@ -193,16 +196,22 @@ function ProgressErrorPanel({
   > = {
     quota: {
       icon: "speed",
-      title: "API limit reached",
+      title: "Service busy",
       description:
-        "The Gemini API quota for your key has been exhausted. Wait a few minutes or check billing in Google AI Studio, then try again.",
+        "Our research service is at capacity right now. Please try again in a few minutes.",
       action: "Try Again Later",
+    },
+    limit: {
+      icon: "block",
+      title: "Limit reached",
+      description: errorMessage ?? "You cannot start another research run right now.",
+      action: "Back to Dashboard",
     },
     connection: {
       icon: "cloud_off",
       title: "Connection interrupted",
       description:
-        "We lost contact with the research service. Ensure the backend is running, then reconnect.",
+        "We lost contact with the research service. Check your connection, then reconnect.",
       action: "Retry Connection",
     },
     pipeline: {
@@ -278,6 +287,7 @@ export function ResearchProgressView({ sessionId }: ResearchProgressViewProps) {
     activeLogs,
     connectionState,
     errorReason,
+    errorMessage,
     retry,
     cancel,
   } = useResearchProgress(sessionId);
@@ -304,7 +314,11 @@ export function ResearchProgressView({ sessionId }: ResearchProgressViewProps) {
         <div className="relative flex flex-col p-6 sm:p-8 md:p-12">
           <AnimatePresence>
             {connectionState === "error" && errorReason && (
-              <ProgressErrorPanel errorReason={errorReason} onRetry={retry} />
+              <ProgressErrorPanel
+                errorReason={errorReason}
+                errorMessage={errorMessage}
+                onRetry={retry}
+              />
             )}
           </AnimatePresence>
 

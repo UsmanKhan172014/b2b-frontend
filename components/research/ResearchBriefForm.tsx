@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { MaterialIcon } from "@/components/marketing/MaterialIcon";
 import {
@@ -15,6 +15,13 @@ import {
 } from "@/components/research/ResearchFormFields";
 import { Textarea } from "@/components/ui";
 import { createResearchSession } from "@/lib/queries";
+import {
+  getUserResearchUsage,
+  isResearchLimitError,
+  limitMessage,
+  PLAN_LABELS,
+  type ResearchUsage,
+} from "@/lib/research/usageLimits";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 
@@ -40,6 +47,10 @@ export interface ResearchBriefPayload {
   requiredContactFields: string[];
   researchDepth: "basic" | "medium" | "advanced";
   buyingSignals?: string;
+  enrichLinkedin?: boolean;
+  userId?: string;
+  /** Companies this user already received in earlier runs; the backend never returns them again. */
+  excludeCompanies?: string[];
 }
 
 interface FormErrors {
@@ -50,7 +61,10 @@ interface FormErrors {
   requiredContactFields?: string;
 }
 
-function validateForm(values: ResearchBriefPayload): FormErrors {
+// Keep in step with MAX_LEAD_GOAL on the backend.
+const MAX_LEAD_GOAL = 25;
+
+function validateForm(values: ResearchBriefPayload, maxLeads: number): FormErrors {
   const errors: FormErrors = {};
 
   if (!values.offer.trim()) {
@@ -61,8 +75,8 @@ function validateForm(values: ResearchBriefPayload): FormErrors {
     errors.targetLocation = "Add a target city, country, or region.";
   }
 
-  if (values.leadGoal < 1 || values.leadGoal > 50) {
-    errors.leadGoal = "Lead goal must be between 1 and 50.";
+  if (!Number.isInteger(values.leadGoal) || values.leadGoal < 1 || values.leadGoal > maxLeads) {
+    errors.leadGoal = `Lead goal must be between 1 and ${maxLeads}.`;
   }
 
   if (values.decisionMakerRoles.length === 0) {
@@ -83,7 +97,7 @@ export function ResearchBriefForm() {
   const router = useRouter();
   const [offer, setOffer] = useState("");
   const [targetLocation, setTargetLocation] = useState("");
-  const [leadGoal, setLeadGoal] = useState(10);
+  const [requestedGoal, setLeadGoal] = useState(10);
   const [decisionMakerRoles, setDecisionMakerRoles] = useState<string[]>([
     ...DEFAULT_ROLES,
   ]);
@@ -97,9 +111,40 @@ export function ResearchBriefForm() {
     "medium",
   );
   const [buyingSignals, setBuyingSignals] = useState("");
+  const [enrichLinkedin] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<ResearchUsage | null>(null);
+  const [usageLoading, setUsageLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsage() {
+      setUsageLoading(true);
+      try {
+        const nextUsage = await getUserResearchUsage(createClient());
+        if (!cancelled) setUsage(nextUsage);
+      } catch {
+        if (!cancelled) setUsage(null);
+      } finally {
+        if (!cancelled) setUsageLoading(false);
+      }
+    }
+
+    void loadUsage();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const researchBlocked = usage !== null && !usage.canStart;
+  // the plan decides how many leads one run may ask for (demo 5, standard 25, never more than what is left this month)
+  const maxLeads = usage?.canStart ? Math.max(1, Math.min(MAX_LEAD_GOAL, usage.allowedNow)) : MAX_LEAD_GOAL;
+
+  // never ask for more than the plan allows, whatever was typed or loaded from an example
+  const leadGoal = Number.isFinite(requestedGoal) ? Math.min(requestedGoal, maxLeads) : requestedGoal;
 
   function toggleContactField(field: string) {
     setRequiredContactFields((current) =>
@@ -127,7 +172,7 @@ export function ResearchBriefForm() {
   function applyExampleBrief(brief: ExampleBrief) {
     setOffer(brief.offer);
     setTargetLocation(brief.targetLocation);
-    setLeadGoal(brief.leadGoal);
+    setLeadGoal(Math.min(brief.leadGoal, maxLeads));
     setDecisionMakerRoles(brief.decisionMakerRoles);
     setRequiredContactFields(brief.requiredContactFields);
     setResearchDepth(brief.researchDepth);
@@ -141,14 +186,15 @@ export function ResearchBriefForm() {
     const payload: ResearchBriefPayload = {
       offer: offer.trim(),
       targetLocation: targetLocation.trim(),
-      leadGoal: 10,
+      leadGoal,
       decisionMakerRoles,
       requiredContactFields,
       researchDepth,
       buyingSignals: buyingSignals.trim() || undefined,
+      enrichLinkedin,
     };
 
-    const nextErrors = validateForm(payload);
+    const nextErrors = validateForm(payload, maxLeads);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -171,13 +217,29 @@ export function ResearchBriefForm() {
 
       const session = await createResearchSession(supabase, {
         userId: user.id,
-        brief: payload as unknown as Record<string, unknown>,
+        brief: {
+          ...payload,
+          userId: user.id,
+        } as unknown as Record<string, unknown>,
         status: "running",
       });
 
       router.push(`/research/${session.id}/progress`);
-    } catch {
-      setSubmitError("Unable to start research. Please try again.");
+    } catch (error) {
+      if (isResearchLimitError(error)) {
+        setSubmitError(
+          error instanceof Error
+            ? error.message
+            : "You have reached your plan limit.",
+        );
+        try {
+          setUsage(await getUserResearchUsage(createClient()));
+        } catch {
+          // keep the message already shown
+        }
+      } else {
+        setSubmitError("Unable to start research. Please try again.");
+      }
       setSubmitting(false);
     }
   }
@@ -196,6 +258,44 @@ export function ResearchBriefForm() {
             decision-maker search, then contact enrichment.
           </p>
         </div>
+
+        {!usageLoading && usage ? (
+          <div
+            className={cn(
+              "relative z-10 mb-6 rounded-xl border px-4 py-3 text-body-sm sm:px-5 sm:py-4",
+              researchBlocked
+                ? "border-error/30 bg-error-container/10 text-error/90"
+                : "border-secondary/30 bg-secondary/10 text-on-surface",
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <MaterialIcon
+                name={researchBlocked ? "block" : "info"}
+                className={cn(
+                  "mt-0.5 shrink-0 text-lg",
+                  researchBlocked ? "text-error" : "text-secondary",
+                )}
+              />
+              <div>
+                <p className="font-medium">
+                  {PLAN_LABELS[usage.planType]} plan
+                  {usage.runLimit !== null
+                    ? ` — ${usage.runsRemaining ?? 0} of ${usage.runLimit} free ${usage.runLimit === 1 ? "run" : "runs"} left, up to ${usage.maxLeadsPerRun} leads`
+                    : usage.monthlyLimit !== null
+                      ? ` — ${usage.monthlyRemaining ?? 0} of ${usage.monthlyLimit} leads left`
+                      : ""}
+                </p>
+                <p className="mt-1 text-on-surface-variant">
+                  {researchBlocked
+                    ? limitMessage(usage)
+                    : usage.runLimit === null && usage.monthlyLimit !== null
+                      ? "Only the leads a run delivers count toward your quota."
+                      : "Only the leads a run delivers count toward your plan."}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <form
           className="relative z-10 space-y-8"
@@ -216,7 +316,7 @@ export function ResearchBriefForm() {
                   setOffer(e.target.value);
                   setErrors((current) => ({ ...current, offer: undefined }));
                 }}
-                placeholder="e.g., wholesale bedsheets and linens, B2B software outsourcing, industrial packaging..."
+                placeholder="e.g., marketing and growth services for banks, B2B software outsourcing, industrial packaging..."
                 className={errors.offer ? "border-error/50" : undefined}
                 aria-invalid={Boolean(errors.offer)}
               />
@@ -257,19 +357,22 @@ export function ResearchBriefForm() {
                 id="leadGoal"
                 name="leadGoal"
                 type="number"
-                min={10}
-                max={10}
-                value={10}
-                disabled
-                readOnly
-                aria-readonly="true"
-                title="Fixed at 10 for now"
+                min={1}
+                max={maxLeads}
+                value={Number.isNaN(leadGoal) ? "" : leadGoal}
+                onChange={(e) => {
+                  setLeadGoal(e.target.value === "" ? Number.NaN : Number(e.target.value));
+                  setErrors((current) => ({ ...current, leadGoal: undefined }));
+                }}
                 className={cn(
-                  "w-full cursor-not-allowed rounded-lg border border-outline-variant/50 bg-surface-container-lowest/70 px-4 py-3 text-body-base text-on-surface-variant opacity-80",
+                  "w-full rounded-lg border bg-surface-container-lowest px-4 py-3 text-body-base text-on-surface transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50",
+                  errors.leadGoal ? "border-error/50" : "border-outline-variant/50",
                 )}
+                aria-invalid={Boolean(errors.leadGoal)}
               />
+              <FieldError message={errors.leadGoal} />
               <p className="text-label-sm text-on-surface-variant/70">
-                Fixed at 10 for now
+                Only high-quality leads are kept; you may get fewer than requested.
               </p>
             </div>
           </div>
@@ -392,6 +495,8 @@ export function ResearchBriefForm() {
             </FieldHint>
           </div>
 
+          {/* "LinkedIn enrichment" option hidden for now (needs the Settings → LinkedIn connection). */}
+
           <div className="space-y-2">
             <FieldLabel icon="radar">Additional context (optional)</FieldLabel>
             <Textarea
@@ -424,7 +529,7 @@ export function ResearchBriefForm() {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || researchBlocked}
               className="group relative overflow-hidden rounded-xl px-6 py-4 shadow-glow-secondary transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px] hover:shadow-secondary/40 disabled:opacity-70 sm:px-8"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-inverse-primary via-primary to-secondary opacity-90 transition-opacity group-hover:opacity-100" />
@@ -440,7 +545,7 @@ export function ResearchBriefForm() {
                 ) : (
                   <>
                     <MaterialIcon name="rocket_launch" filled />
-                    Start Deep Research
+                    Start Research
                   </>
                 )}
               </span>

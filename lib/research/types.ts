@@ -48,6 +48,12 @@ export interface ResearchLead {
   isPrimaryContact?: boolean;
   contactRank?: number;
   linkedinStatus?: string;
+  linkedinAbout?: string;
+  linkedinSubtitle?: string;
+  linkedinLocation?: string;
+  linkedinExperience?: { role?: string; company?: string; duration?: string }[];
+  linkedinEducation?: { school?: string; degree?: string; duration?: string }[];
+  linkedinSkills?: { name?: string; skillName?: string }[];
   additionalContactCount?: number;
 }
 

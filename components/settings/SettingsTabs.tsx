@@ -8,8 +8,10 @@ import { cn } from "@/lib/cn";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
   { id: "profile", label: "Profile" },
-  { id: "api", label: "API Usage" },
-  { id: "billing", label: "Billing" },
+  // LinkedIn tab hidden for now: its /linkedin/* backend endpoints are not implemented.
+  // Re-enable by restoring: { id: "linkedin", label: "LinkedIn" },
+  { id: "plan", label: "Plan & Usage" },
+  { id: "security", label: "Security" },
 ];
 
 interface SettingsTabsProps {
