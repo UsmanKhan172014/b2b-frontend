@@ -21,7 +21,7 @@ const tiers: PricingTier[] = [
     price: "$0",
     priceSuffix: "/mo",
     features: [
-      { label: "50 Leads / month", included: true },
+      { label: "5 Leads / month", included: true },
       { label: "Basic Enrichment", included: true },
       { label: "Custom Integrations", included: false },
     ],
@@ -33,7 +33,7 @@ const tiers: PricingTier[] = [
     price: "$99",
     priceSuffix: "/mo",
     features: [
-      { label: "500 Leads / month", included: true, emphasized: true },
+      { label: "100 Leads / month", included: true, emphasized: true },
       { label: "Advanced Deep Enrichment", included: true, emphasized: true },
       { label: "CRM Integrations", included: true, emphasized: true },
       { label: "AI Talking Points", included: true, emphasized: true },
