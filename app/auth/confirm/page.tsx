@@ -1,4 +1,3 @@
-
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AuthHeader } from "@/components/auth/AuthShared";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -16,17 +15,21 @@ type Params = Record<string, string | string[] | undefined>;
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
 
 /**
- * Landing page for the links in invitation and password-reset e-mails. Nothing is consumed here: the
- * button posts the token to /api/auth/verify. That keeps mail-security scanners, which open every link
- * in a message, from using up the one-time token before the person clicks.
+ * Landing page for the links in invitation and password-reset e-mails. A link with a token in the query
+ * (token_hash / code) shows a button that posts it to /api/auth/verify, so mail scanners cannot use it up.
+ * Supabase's default link carries the session in the URL fragment instead; the browser finishes that one.
  */
 export default async function ConfirmPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
   const tokenHash = first(params.token_hash);
   const code = first(params.code);
   const type = first(params.type) || "recovery";
-    // Supabase's default e-mail link puts the session in the URL fragment, which the server never sees.
-  // With no token in the query, let the browser read the fragment (it sends the person to /login if there is none).
+
+  const invite = type === "invite";
+  const next = safeRedirectPath(first(params.next), invite ? "/reset-password?invited=1" : "/reset-password");
+
+  // No token in the query: Supabase's default link puts the session in the URL fragment, which the server
+  // never sees. Let the browser read it (it sends the person to /login if there is none).
   if (!tokenHash && !code) {
     return (
       <AuthShell>
@@ -34,9 +37,6 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
       </AuthShell>
     );
   }
-
-  const invite = type === "invite";
-  const next = safeRedirectPath(first(params.next), invite ? "/reset-password?invited=1" : "/reset-password");
 
   return (
     <AuthShell>
