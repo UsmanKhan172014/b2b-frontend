@@ -15,9 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeadScope AI",
+  title: "Sales Copilot",
   description:
-    "LeadScope AI finds, enriches, and prioritizes your ideal prospects while you sleep.",
+    "Sales Copilot finds, enriches, and prioritizes your ideal prospects while you sleep.",
 };
 
 export default function RootLayout({

@@ -67,7 +67,7 @@ export function mapLeadToEmailVariables(
     role: readRole(lead),
     rationale: readRationale(lead),
     offer: offer.trim() || "AI-powered B2B lead research and outreach",
-    product: "LeadScope AI by Geniteams",
+    product: "Sales Copilot by Geniteams",
   };
 }
 

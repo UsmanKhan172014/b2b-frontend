@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AdminUsers } from "@/components/admin/AdminUsers";
 import { getCaller } from "@/lib/auth/requireAdmin";
 
-export const metadata = { title: "Admin | LeadScope AI", robots: { index: false } };
+export const metadata = { title: "Admin | Sales Copilot", robots: { index: false } };
 
 export default async function AdminPage() {
   const { user, isAdmin } = await getCaller();

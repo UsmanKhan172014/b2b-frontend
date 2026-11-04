@@ -28,7 +28,7 @@ export function MarketingNav({ isAuthenticated = false }: MarketingNavProps) {
         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2">
           <MaterialIcon name="psychology" className="text-primary" filled />
           <span className="gradient-text text-base font-semibold sm:text-headline-md">
-            LeadScope AI
+            Sales Copilot
           </span>
         </Link>
 

@@ -113,7 +113,7 @@ export function ResetPasswordForm() {
   return (
     <AuthCard>
       <AuthHeader
-        title={invited ? "Welcome to LeadScope AI" : "Choose a new password"}
+        title={invited ? "Welcome to Sales Copilot" : "Choose a new password"}
         subtitle={
           invited
             ? "Set your name and a password to finish creating your account."

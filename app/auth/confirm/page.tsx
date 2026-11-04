@@ -6,7 +6,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { safeRedirectPath } from "@/lib/security/safeRedirect";
 
 export const metadata = {
-  title: "Confirm | LeadScope AI",
+  title: "Confirm | Sales Copilot",
   robots: { index: false },
   referrer: "no-referrer", // the link carries a one-time token: never send it on to another site
 };
@@ -37,7 +37,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
           title={invite ? "Accept your invitation" : "Reset your password"}
           subtitle={
             invite
-              ? "You have been invited to LeadScope AI. Continue to set up your account."
+              ? "You have been invited to Sales Copilot. Continue to set up your account."
               : "Continue to choose a new password."
           }
           variant="signup"

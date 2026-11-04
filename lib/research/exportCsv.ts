@@ -122,7 +122,7 @@ function sortForExport(leads: ResearchLead[]): ResearchLead[] {
 /**
  * Triggers a browser download of research leads as CSV.
  */
-export function exportLeadsToCsv(leads: ResearchLead[], filename = "leadscope-contacts.csv") {
+export function exportLeadsToCsv(leads: ResearchLead[], filename = "sales-copilot-contacts.csv") {
   const rows = sortForExport(leads).map(leadToExportRow);
   const csv = [EXPORT_HEADERS, ...rows]
     .map((row) => row.map(escapeCsvValue).join(","))
@@ -141,7 +141,7 @@ export function exportLeadsToCsv(leads: ResearchLead[], filename = "leadscope-co
  * Triggers a browser download of research leads as XLSX (via CSV-compatible TSV fallback).
  * Uses tab-separated values with .xls extension for Excel compatibility without extra deps.
  */
-export function exportLeadsToXlsx(leads: ResearchLead[], filename = "leadscope-contacts.xls") {
+export function exportLeadsToXlsx(leads: ResearchLead[], filename = "sales-copilot-contacts.xls") {
   const rows = sortForExport(leads).map(leadToExportRow);
   const tsv = [EXPORT_HEADERS, ...rows]
     .map((row) => row.map(escapeCsvValue).join("\t"))

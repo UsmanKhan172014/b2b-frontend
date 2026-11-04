@@ -9,9 +9,9 @@ import { SocialProofSection } from "@/components/marketing/SocialProofSection";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "LeadScope AI - The AI Agent for High-Velocity Sales Teams",
+  title: "Sales Copilot - The AI Agent for High-Velocity Sales Teams",
   description:
-    "LeadScope AI finds, enriches, and prioritizes your ideal prospects while you sleep. Stop searching, start closing.",
+    "Sales Copilot finds, enriches, and prioritizes your ideal prospects while you sleep. Stop searching, start closing.",
 };
 
 export default async function MarketingPage() {

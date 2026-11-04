@@ -363,7 +363,7 @@ export function ResearchProgressView({ sessionId }: ResearchProgressViewProps) {
               )}
             </h2>
             <p className="mx-auto max-w-xl text-body-base text-on-surface-variant md:mx-0">
-              LeadScope AI is analyzing millions of data points to find your
+              Sales Copilot is analyzing millions of data points to find your
               ideal targets based on the provided search parameters.
             </p>
             <p className="mt-2 font-mono text-label-mono text-on-surface-variant/60">

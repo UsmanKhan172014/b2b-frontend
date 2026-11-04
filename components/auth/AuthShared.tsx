@@ -89,7 +89,7 @@ export function AuthHeader({
       <div>
         {variant === "login" && (
           <h1 className="mb-1 gradient-text text-display-lg-mobile md:text-display-lg">
-            LeadScope AI
+            Sales Copilot
           </h1>
         )}
         <h2

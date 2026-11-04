@@ -77,13 +77,13 @@ function SidebarPanel({
   }
 
   const displayName =
-    userName || userEmail?.split("@")[0] || "LeadScope User";
+    userName || userEmail?.split("@")[0] || "Sales Copilot User";
 
   return (
     <>
       <div className="mb-6 mt-2 px-2 md:mb-8">
         <h1 className="gradient-text text-[32px] leading-none font-bold tracking-tight">
-          LeadScope AI
+          Sales Copilot
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">Enterprise Tier</p>
       </div>
@@ -208,7 +208,7 @@ export function DashboardSidebar({
 export function DashboardMobileBrand() {
   return (
     <Link href="/dashboard" className="gradient-text text-base font-semibold md:hidden">
-      LeadScope AI
+      Sales Copilot
     </Link>
   );
 }

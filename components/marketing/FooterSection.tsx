@@ -10,7 +10,7 @@ export function FooterSection() {
         <div className="flex items-center gap-2">
           <MaterialIcon name="psychology" className="text-xl text-primary" filled />
           <span className="text-body-base font-semibold text-on-surface opacity-80">
-            LeadScope AI
+            Sales Copilot
           </span>
         </div>
         <div className="flex gap-8">
@@ -34,7 +34,7 @@ export function FooterSection() {
           </a>
         </div>
         <div className="text-body-sm text-on-surface-variant opacity-50">
-          © 2024 LeadScope AI. All rights reserved.
+          © 2024 Sales Copilot. All rights reserved.
         </div>
       </div>
     </footer>

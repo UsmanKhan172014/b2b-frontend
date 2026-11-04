@@ -34,7 +34,7 @@ export function HeroSection({ isAuthenticated = false }: HeroSectionProps) {
           <span className="gradient-text">High-Velocity</span> Sales Teams
         </h1>
         <p className="max-w-xl text-base text-body-base text-on-surface-variant sm:text-lg">
-          LeadScope AI finds, enriches, and prioritizes your ideal prospects
+          Sales Copilot finds, enriches, and prioritizes your ideal prospects
           while you sleep. Stop searching, start closing.
         </p>
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap sm:gap-4 sm:pt-4">

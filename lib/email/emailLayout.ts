@@ -1,4 +1,4 @@
-export const PRODUCT_NAME = "LeadScope AI";
+export const PRODUCT_NAME = "Sales Copilot";
 export const PRODUCT_TAGLINE = "by Geniteams";
 export const GENITEAM_LOGO_URL = "https://www.geniteam.com/assets/images/header-logo.png";
 
@@ -32,7 +32,7 @@ function senderInitial(name: string): string {
 }
 
 /**
- * Wraps generated email body in a LeadScope AI inbound-inquiry layout.
+ * Wraps generated email body in a Sales Copilot inbound-inquiry layout.
  * Presents the message as if the prospect reached out to Geniteams.
  */
 export function wrapInboundInquiryLayout(
