@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AuthHeader } from "@/components/auth/AuthShared";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { HashSessionConfirm } from "@/components/auth/HashSessionConfirm";
 import { safeRedirectPath } from "@/lib/security/safeRedirect";
 
 export const metadata = {
@@ -25,7 +25,15 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
   const tokenHash = first(params.token_hash);
   const code = first(params.code);
   const type = first(params.type) || "recovery";
-  if (!tokenHash && !code) redirect("/login?error=link_invalid");
+    // Supabase's default e-mail link puts the session in the URL fragment, which the server never sees.
+  // With no token in the query, let the browser read the fragment (it sends the person to /login if there is none).
+  if (!tokenHash && !code) {
+    return (
+      <AuthShell>
+        <HashSessionConfirm next={next} />
+      </AuthShell>
+    );
+  }
 
   const invite = type === "invite";
   const next = safeRedirectPath(first(params.next), invite ? "/reset-password?invited=1" : "/reset-password");
